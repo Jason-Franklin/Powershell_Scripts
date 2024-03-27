@@ -1,0 +1,52 @@
+# Array of remote server details
+$servers = @(
+    "REMOTE_SERVER_NAME_1",
+    "REMOTE_SERVER_NAME_2"
+    # Add more servers as needed
+)
+
+# Common username and password for all servers
+$username = "USERNAME"
+$password = "PASSWORD" | ConvertTo-SecureString -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PSCredential($username, $password)
+
+# Remote directory path
+$remoteDir = "\\{0}\E$\Application\STSInstall\Release-2.7.1"
+
+# Function to retrieve file information
+function Get-RemoteFileInfo {
+    param (
+        [string]$remotePath,
+        [string]$server,
+        [System.Management.Automation.PSCredential]$cred
+    )
+
+    # Get file list from the remote directory
+    $files = Get-ChildItem -Path $remotePath
+
+    foreach ($file in $files) {
+        $fileInfo = [PSCustomObject]@{
+            Server = $server
+            FileName = $file.Name
+            DateModified = $file.LastWriteTime
+            Type = $file.Extension
+            Size = $file.Length
+        }
+        Write-Output $fileInfo
+    }
+}
+
+# Iterate over each server
+foreach ($server in $servers) {
+    $remotePath = $remoteDir -f $server
+
+    # Connect to the remote server and retrieve file information
+    Invoke-Command -ComputerName $server -Credential $cred -ScriptBlock {
+        param (
+            [string]$remotePath,
+            [string]$server,
+            [System.Management.Automation.PSCredential]$cred
+        )
+        Get-RemoteFileInfo -remotePath $remotePath -server $server -cred $cred
+    } -ArgumentList $remotePath, $server, $cred
+}
