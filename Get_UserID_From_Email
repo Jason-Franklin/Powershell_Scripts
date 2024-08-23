@@ -1,0 +1,52 @@
+# Import the Active Directory module
+Import-Module ActiveDirectory
+
+# Path to the CSV file
+$csvFilePath = "C:\path\to\your\email_list.csv"
+
+# Function to get user information from email
+function Get-UserInfoByEmail {
+    param (
+        [string]$emailAddress
+    )
+
+    # Get the user information from Active Directory using the email address
+    $user = Get-ADUser -Filter "Mail -eq '$emailAddress'" -Properties SamAccountName, DisplayName, Title, Department, Company, Mail
+
+    # Check if the user was found
+    if ($user) {
+        # Return the user information
+        return [PSCustomObject]@{
+            EmailAddress   = $user.Mail
+            Name           = $user.DisplayName
+            SamAccountName = $user.SamAccountName
+            Title          = $user.Title
+            Department     = $user.Department
+            Company        = $user.Company
+        }
+    } else {
+        Write-Warning "No user found with the email address $emailAddress"
+    }
+}
+
+# Read the CSV file and process each email address
+$emailList = Import-Csv -Path $csvFilePath
+
+# Initialize an array to store the results
+$userInfoList = @()
+
+foreach ($entry in $emailList) {
+    $email = $entry.EmailAddress
+    $userInfo = Get-UserInfoByEmail -emailAddress $email
+
+    # Add the user info to the list if it exists
+    if ($userInfo) {
+        $userInfoList += $userInfo
+    }
+}
+
+# Export the results to a new CSV file
+$outputFilePath = "C:\path\to\your\output_user_info.csv"
+$userInfoList | Export-Csv -Path $outputFilePath -NoTypeInformation
+
+Write-Host "User information has been saved to $outputFilePath"
