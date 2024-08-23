@@ -1,8 +1,9 @@
 # Import the Active Directory module
 Import-Module ActiveDirectory
 
-# Path to the CSV file
-$csvFilePath = "C:\path\to\your\email_list.csv"
+# Path to the input TXT file and output CSV file
+$txtFilePath = "C:\path\to\your\email_list.txt"
+$outputFilePath = "C:\path\to\your\output_user_info.csv"
 
 # Function to get user information from email
 function Get-UserInfoByEmail {
@@ -29,14 +30,13 @@ function Get-UserInfoByEmail {
     }
 }
 
-# Read the CSV file and process each email address
-$emailList = Import-Csv -Path $csvFilePath
+# Read the email addresses from the TXT file
+$emailList = Get-Content -Path $txtFilePath
 
 # Initialize an array to store the results
 $userInfoList = @()
 
-foreach ($entry in $emailList) {
-    $email = $entry.EmailAddress
+foreach ($email in $emailList) {
     $userInfo = Get-UserInfoByEmail -emailAddress $email
 
     # Add the user info to the list if it exists
@@ -46,7 +46,6 @@ foreach ($entry in $emailList) {
 }
 
 # Export the results to a new CSV file
-$outputFilePath = "C:\path\to\your\output_user_info.csv"
 $userInfoList | Export-Csv -Path $outputFilePath -NoTypeInformation
 
 Write-Host "User information has been saved to $outputFilePath"
